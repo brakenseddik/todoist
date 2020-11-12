@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:todoist/src/components/drawer_navigation.dart';
+import 'package:todoist/src/constants.dart';
 
 class HomePage extends StatelessWidget {
   @override
@@ -8,7 +9,7 @@ class HomePage extends StatelessWidget {
       appBar: AppBar(
         title: Text(
           'Todoist',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+          style: kAppBarTitle,
         ),
       ),
       drawer: DrawerNavigation(),

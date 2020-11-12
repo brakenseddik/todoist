@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:todoist/src/components/text_field.dart';
+import 'package:todoist/src/constants.dart';
 import 'package:todoist/src/models/category.dart';
 import 'package:todoist/src/services/category_service.dart';
 
@@ -8,25 +10,29 @@ class CategoriesScreen extends StatefulWidget {
 }
 
 class _CategoriesScreenState extends State<CategoriesScreen> {
+  final GlobalKey<ScaffoldState> _globalKey = GlobalKey<ScaffoldState>();
   TextEditingController _NameController = TextEditingController();
   TextEditingController _DescriptionController = TextEditingController();
+  TextEditingController _EditNameController = TextEditingController();
+  TextEditingController _EditDescriptionController = TextEditingController();
   CategoryService _categoryService = CategoryService();
   Category _category = Category();
 
-  List<Widget> _categoriesList = List<Widget>();
+  List<Category> _categoriesList = List<Category>();
+
+  var category;
 
   getCategories() async {
+    _categoriesList = [];
     var categories = await _categoryService.getCategories();
     categories.forEach((category) {
-      _categoriesList.add(Card(
-        color: Colors.white70,
-        child: ListTile(
-          title: Text(
-            category['name'],
-            style: TextStyle(color: Colors.black),
-          ),
-        ),
-      ));
+      setState(() {
+        var model = Category();
+        model.id = category['id'];
+        model.name = category['name'];
+        model.description = category['description'];
+        _categoriesList.add(model);
+      });
     });
   }
 
@@ -40,14 +46,17 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
             content: SingleChildScrollView(
               child: Column(
                 children: [
-                  TextField(
+                  Field(
                     controller: _NameController,
-                    decoration: InputDecoration(hintText: 'Category Name'),
+                    hint: 'Category Name',
                   ),
-                  TextField(
+                  Divider(
+                    color: black,
+                    thickness: 1,
+                  ),
+                  Field(
                     controller: _DescriptionController,
-                    decoration:
-                        InputDecoration(hintText: 'Category Description'),
+                    hint: 'Category Description',
                   ),
                 ],
               ),
@@ -61,12 +70,109 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                     _category.description = _DescriptionController.text;
                     var result = await _categoryService.saveCategory(_category);
                     print(result);
-                    Navigator.pop(context);
+                    if (result > 0) Navigator.pop(context);
                   },
                   child: Text('Save')),
             ],
           );
         });
+  }
+
+  _editCategoryDialog(BuildContext context) {
+    return showDialog(
+        context: context,
+        barrierDismissible: true,
+        builder: (param) {
+          return AlertDialog(
+            title: Text('Edit Category'),
+            content: SingleChildScrollView(
+              child: Column(
+                children: [
+                  Field(
+                    controller: _EditNameController,
+                    hint: 'Edit Category Name',
+                  ),
+                  Divider(
+                    color: black,
+                    thickness: 1,
+                  ),
+                  Field(
+                    controller: _EditDescriptionController,
+                    hint: 'Edit Category Description',
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              FlatButton(
+                  onPressed: () => Navigator.pop(context), child: Text('Exit')),
+              FlatButton(
+                  onPressed: () async {
+                    _category.id = category[0]['id'];
+                    _category.name = _EditNameController.text;
+                    _category.description = _EditDescriptionController.text;
+                    var result =
+                        await _categoryService.updateCategory(_category);
+                    print(result);
+                    if (result > 0) {
+                      Navigator.pop(context);
+                      getCategories();
+                      _showSnackBar(Text('Category updated successfully '));
+                    }
+                  },
+                  child: Text('Update')),
+            ],
+          );
+        });
+  }
+
+  _removeCategoryDialog(BuildContext context, categoryId) {
+    return showDialog(
+        context: context,
+        barrierDismissible: true,
+        builder: (param) {
+          return AlertDialog(
+            title: Text('Edit Category'),
+            content: Text('Are you sure you want to delete this category'),
+            actions: [
+              FlatButton(
+                  color: Colors.green,
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(
+                    'Exit',
+                    style: TextStyle(color: white),
+                  )),
+              FlatButton(
+                  color: Colors.red,
+                  onPressed: () async {
+                    _categoryService.removeCategory(categoryId);
+                    Navigator.pop(context);
+                    getCategories();
+                    _showSnackBar(Text('Category deleted successfully'));
+                  },
+                  child: Text(
+                    'Delete',
+                    style: TextStyle(color: white),
+                  )),
+            ],
+          );
+        });
+  }
+
+  getCategoryById(BuildContext context, categoryId) async {
+    category = await _categoryService.getCategoryById(categoryId);
+
+    setState(() {
+      _EditNameController.text = category[0]['name'];
+      _EditDescriptionController.text = category[0]['description'];
+    });
+
+    _editCategoryDialog(context);
+  }
+
+  _showSnackBar(messagee) {
+    var _snackBar = SnackBar(content: messagee);
+    _globalKey.currentState.showSnackBar(_snackBar);
   }
 
   @override
@@ -78,20 +184,52 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _globalKey,
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           _showDialog(context);
         },
-        child: Icon(Icons.add),
+        child: Icon(
+          Icons.add,
+          color: blue,
+        ),
       ),
       appBar: AppBar(
         title: Text(
           'Categories',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+          style: kAppBarTitle,
         ),
       ),
-      body: Column(
-        children: _categoriesList,
+      body: ListView.builder(
+        itemCount: _categoriesList.length,
+        itemBuilder: (context, index) {
+          return Card(
+            margin: EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+            color: Colors.white70,
+            child: ListTile(
+              leading: IconButton(
+                  icon: Icon(Icons.edit),
+                  onPressed: () {
+                    getCategoryById(context, _categoriesList[index].id);
+                  }),
+              title: Text(
+                _categoriesList[index].name,
+                style: TextStyle(
+                  color: Colors.black,
+                ),
+              ),
+              subtitle: Text(
+                _categoriesList[index].description,
+                style: TextStyle(color: Colors.black),
+              ),
+              trailing: IconButton(
+                  icon: Icon(Icons.delete),
+                  onPressed: () {
+                    _removeCategoryDialog(context, _categoriesList[index].id);
+                  }),
+            ),
+          );
+        },
       ),
     );
   }
