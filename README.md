@@ -1,6 +1,6 @@
 # todoist
 
-A new Flutter application.
+### A To Do mobile application written with Flutter & Sqlite.
 
 ## Getting Started
 
