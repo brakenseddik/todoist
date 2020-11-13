@@ -40,4 +40,9 @@ class Repository {
     var conn = await database;
     conn.delete(table, where: 'id=?', whereArgs: [categoryId]);
   }
+
+  getTaskByCategory(String table, String column, String value) async {
+    var conn = await database;
+    return await conn.query(table, where: '$column=?', whereArgs: [value]);
+  }
 }

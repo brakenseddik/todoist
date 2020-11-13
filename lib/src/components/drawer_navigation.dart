@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:todoist/src/services/category_service.dart';
 import 'package:todoist/src/views/categories_screen.dart';
 import 'package:todoist/src/views/home_screen.dart';
+import 'package:todoist/src/views/todosByCategory_screen.dart';
 
 class DrawerNavigation extends StatefulWidget {
   @override
@@ -8,6 +10,34 @@ class DrawerNavigation extends StatefulWidget {
 }
 
 class _DrawerNavigationState extends State<DrawerNavigation> {
+  List<Widget> _categoryList = List<Widget>();
+  CategoryService _service = CategoryService();
+
+  getAllCategories() async {
+    var categories = await _service.getCategories();
+    categories.forEach((category) {
+      setState(() {
+        _categoryList.add(ListTile(
+          onTap: () {
+            Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => TaskByCategory(
+                          category: category['name'],
+                        )));
+          },
+          title: Text(category['name']),
+        ));
+      });
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    getAllCategories();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -38,6 +68,10 @@ class _DrawerNavigationState extends State<DrawerNavigation> {
               title: Text('Categories'),
               leading: Icon(Icons.list),
             ),
+            Divider(),
+            Column(
+              children: _categoryList,
+            )
           ],
         ),
       ),

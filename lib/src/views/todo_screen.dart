@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:todoist/src/components/todo_field.dart';
 import 'package:todoist/src/constants.dart';
+import 'package:todoist/src/models/task.dart';
 import 'package:todoist/src/services/category_service.dart';
+import 'package:todoist/src/services/task_service.dart';
 
 class ToDoScreen extends StatefulWidget {
   @override
@@ -10,10 +12,14 @@ class ToDoScreen extends StatefulWidget {
 }
 
 class _ToDoScreenState extends State<ToDoScreen> {
+  final GlobalKey<ScaffoldState> _globalKey = GlobalKey<ScaffoldState>();
+
   TextEditingController _titleController = TextEditingController();
   TextEditingController _descriptionController = TextEditingController();
   TextEditingController _dateController = TextEditingController();
-
+  TaskService _taskService = TaskService();
+  Task _task = Task();
+  int isFinished = 0;
   List<DropdownMenuItem> _categories = List<DropdownMenuItem>();
   var _selectedValue;
   DateTime _dateTime = DateTime.now();
@@ -30,6 +36,11 @@ class _ToDoScreenState extends State<ToDoScreen> {
         _dateController.text = DateFormat('yyyy-MM-dd').format(_pickDate);
       });
     }
+  }
+
+  _showSnackBar(message) {
+    var _snackBar = SnackBar(content: message);
+    _globalKey.currentState.showSnackBar(_snackBar);
   }
 
   _loadCategories() async {
@@ -54,6 +65,7 @@ class _ToDoScreenState extends State<ToDoScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _globalKey,
       appBar: AppBar(
         title: Text(
           'Add Task',
@@ -110,10 +122,21 @@ class _ToDoScreenState extends State<ToDoScreen> {
                   width: double.infinity,
                   height: 50,
                   child: RaisedButton(
-                    onPressed: () {},
+                    onPressed: () async {
+                      _task.isFinished = 0;
+                      _task.title = _titleController.text;
+                      _task.description = _descriptionController.text;
+                      _task.date = _dateController.text;
+                      _task.category = _selectedValue;
+                      var result = await _taskService.insertTask(_task);
+                      print(result);
+                      if (result > 0) {
+                        _showSnackBar(Text('Task added successfully'));
+                      }
+                    },
                     color: blue,
                     child: Text(
-                      'Save ToDo',
+                      'Save Task',
                       style: TextStyle(color: white),
                     ),
                   ),
